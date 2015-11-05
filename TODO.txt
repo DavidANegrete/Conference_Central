@@ -1,0 +1,83 @@
+SCRUM MASTER: gritzMCgritz
+
+
+
+Task 1: Add  a Session to a Conference Object
+	
+
+	Session Class (models.py):
+		import:
+			from google.appengine.ext import ndb
+		class:
+			class Session(ndb.Model):
+			class SessionForm(messages.Message):
+			class SessionForms(messages.Message):
+
+
+	SessionForm:
+		Child(parent Conference)
+
+		Data:
+			Session_Name
+			highlights
+			speaker
+			duration
+			typeOfSession
+			date
+			start_time( 24HR )
+			like ( user_wish_list ) ( Bool )
+
+	API EndPoints methods:
+			get:
+				getConferenceSessions(websafeConferenceKey):
+					Take a session Key and return all session info 
+			
+				getConferenceSessionsByType(
+									websafeConferenceKey, typeOfSession):
+					Take a session Key and return a type
+				
+				getSessionsBySpeaker(speaker):
+					Given a speaker return all sessions by the speaker
+		
+			set:
+				createSession(SessionForm, websafeConferenceKey):
+					Take in a session form and conference key 
+					returns a session object
+
+Task 2: User Wish List
+	
+
+	SessionForm:
+		like (Boolean SessionForm data)
+	
+	API EndPoints:
+
+		set:
+			addSessionToWishlist(SessionKey)
+				Take a session key add to list of sessions intrested in
+		get:
+			getSessionsInWishlist()
+				Take a user and show all sessions
+
+Task 3: Indexes and queries
+
+	
+	indexes:
+		validate fuctionality indexed on app engine
+
+	Queries(new):
+		Start_time
+		Conference Length
+
+Task 4: Add a task
+
+
+	session per conference:
+		if speaker speaks more than once:
+			Memcache:
+				features the speaker and session names
+
+
+	API EndPoints method:
+		getFeaturedSpeaker()
+
