@@ -6,20 +6,24 @@ Udacity conference server-side Python App Engine data & ProtoRPC models
 
 $Id: models.py,v 1.1 2014/05/24 22:01:10 wesc Exp $
 
-created/forked from conferences.py by wesc on 2014 may 24
+created from conferences.py by David Negrete on 2011 Nov 1
 
 """
 
-__author__ = 'wesc+api@google.com (Wesley Chun)'
+__authors__ = ['wesc+api@google.com (Wesley Chun)',
+               'danegrete79@gmail.com (David Negrete)
+
 
 import httplib
 import endpoints
 from protorpc import messages
 from google.appengine.ext import ndb
 
+
 class ConflictException(endpoints.ServiceException):
     """ConflictException -- exception mapped to HTTP 409 response"""
     http_status = httplib.CONFLICT
+
 
 class Profile(ndb.Model):
     """Profile -- User profile object"""
@@ -27,11 +31,14 @@ class Profile(ndb.Model):
     mainEmail = ndb.StringProperty()
     teeShirtSize = ndb.StringProperty(default='NOT_SPECIFIED')
     conferenceKeysToAttend = ndb.StringProperty(repeated=True)
+    wishListSession = ndb.StringProperty(repeated=True)
+
 
 class ProfileMiniForm(messages.Message):
     """ProfileMiniForm -- update Profile form message"""
     displayName = messages.StringField(1)
     teeShirtSize = messages.EnumField('TeeShirtSize', 2)
+
 
 class ProfileForm(messages.Message):
     """ProfileForm -- Profile outbound form message"""
@@ -39,14 +46,18 @@ class ProfileForm(messages.Message):
     mainEmail = messages.StringField(2)
     teeShirtSize = messages.EnumField('TeeShirtSize', 3)
     conferenceKeysToAttend = messages.StringField(4, repeated=True)
+    wishListSession = messages.StringField(5, repeated=True)
+
 
 class StringMessage(messages.Message):
     """StringMessage-- outbound (single) string message"""
     data = messages.StringField(1, required=True)
 
+
 class BooleanMessage(messages.Message):
     """BooleanMessage-- outbound Boolean value message"""
     data = messages.BooleanField(1)
+
 
 class Conference(ndb.Model):
     """Conference -- Conference object"""
@@ -60,6 +71,7 @@ class Conference(ndb.Model):
     endDate         = ndb.DateProperty()
     maxAttendees    = ndb.IntegerProperty()
     seatsAvailable  = ndb.IntegerProperty()
+
 
 class ConferenceForm(messages.Message):
     """ConferenceForm -- Conference outbound form message"""
@@ -76,9 +88,11 @@ class ConferenceForm(messages.Message):
     websafeKey      = messages.StringField(11)
     organizerDisplayName = messages.StringField(12)
 
+
 class ConferenceForms(messages.Message):
     """ConferenceForms -- multiple Conference outbound form message"""
     items = messages.MessageField(ConferenceForm, 1, repeated=True)
+
 
 class TeeShirtSize(messages.Enum):
     """TeeShirtSize -- t-shirt size enumeration value"""
@@ -98,13 +112,47 @@ class TeeShirtSize(messages.Enum):
     XXXL_M = 14
     XXXL_W = 15
 
+
 class ConferenceQueryForm(messages.Message):
     """ConferenceQueryForm -- Conference query inbound form message"""
     field = messages.StringField(1)
     operator = messages.StringField(2)
     value = messages.StringField(3)
 
+
 class ConferenceQueryForms(messages.Message):
     """ConferenceQueryForms -- multiple ConferenceQueryForm inbound form message"""
     filters = messages.MessageField(ConferenceQueryForm, 1, repeated=True)
 
+
+# Sessions added to confrence Objects
+
+class Session(ndb.Model):
+    """Conference Sessions object"""
+
+    name            = ndb.StringProperty(required=True)
+    date            = ndb.DateProperty()
+    speaker         = ndb.StringProperty()
+    startTime       = ndb.TimeProperty()
+    typeOfSession   = ndb.StringProperty()
+    duration        = ndb.TimeProperty()
+    highlights      = ndb.StringProperty(repeated=True)
+
+
+class SessionForm(messages.Message):
+    """Session outbound form message"""
+
+    name            = messages.StringField(1)
+    date            = messages.StringField(2)
+    speaker         = messages.StringField(3)
+    startTime       = messages.StringField(4)
+    typeOfSession   = messages.StringField(5)
+    duration        = messages.StringField(6)
+    highlights      = messages.StringField(7, repeated=True)
+    websafeKey      = messages.StringField(8)
+
+
+class SessionForms(messages.Message):
+    """Multiple Conference outbound form message"""
+
+    items = messages.MessageField(SessionForm, 1, repeated=True)
