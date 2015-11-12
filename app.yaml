@@ -36,6 +36,8 @@ handlers:       # static then dynamic
 - url: /crons/set_announcement
   script: main.app
 
+# Everything is declared as being handled 
+# by the conference api locally and with API backend
 - url: /_ah/spi/.*
   script: conference.api
   secure: always

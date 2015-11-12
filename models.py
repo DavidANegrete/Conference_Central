@@ -11,7 +11,7 @@ created from conferences.py by David Negrete on 2011 Nov 1
 """
 
 __authors__ = ['wesc+api@google.com (Wesley Chun)',
-               'danegrete79@gmail.com (David Negrete)
+               'danegrete79@gmail.com (David Negrete)']
 
 
 import httplib
@@ -155,4 +155,5 @@ class SessionForm(messages.Message):
 class SessionForms(messages.Message):
     """Multiple Conference outbound form message"""
 
+    # Passing SessionForm object
     items = messages.MessageField(SessionForm, 1, repeated=True)

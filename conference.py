@@ -91,9 +91,11 @@ CONF_POST_REQUEST = endpoints.ResourceContainer(
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-@endpoints.api(name='conference', version='v1', audiences=[ANDROID_AUDIENCE],
-    allowed_client_ids=[WEB_CLIENT_ID, API_EXPLORER_CLIENT_ID, ANDROID_CLIENT_ID, IOS_CLIENT_ID],
-    scopes=[EMAIL_SCOPE])
+@endpoints.api( name='conference', version='v1',
+                audiences=[ANDROID_AUDIENCE],
+                allowed_client_ids=[WEB_CLIENT_ID, API_EXPLORER_CLIENT_ID,
+                                    ANDROID_CLIENT_ID, IOS_CLIENT_ID],
+                scopes=[EMAIL_SCOPE])
 class ConferenceApi(remote.Service):
     """Conference API v0.1"""
 
@@ -331,6 +333,42 @@ class ConferenceApi(remote.Service):
                 conferences]
         )
 
+# - - - SessionForm objects - - - - - - - - - - - - - - - - - - -
+    def _copySessionToForm(self, session_):
+        """Copy fields from Session to SessionForm"""
+
+        sf = SessionForm()
+        for field in sf.all_fields():
+            if hasattr(session_, field.name):
+                # convert date, time, and duration to string:
+                if field.name == "date" or field.name == "startTime" or \
+                        field.name == "duration":
+                    setattr(sf, field.name, str(getattr(session_, field.name)))
+                # all other fields are simply copied:
+                else:
+                    setattr(sf, field.name, getattr(session_, field.name))
+            elif field.name == "websafeKey":
+                setattr(sf, field.name, session_.key.urlsafe())
+            elif field.name == "websafeConferenceKey":
+                setattr(sf, field.name, session_.key.parent().urlsafe())
+
+        sf.check_initialized()
+        return sf
+
+    def _query_session(self, request):
+        """Helper function for getting a session"""
+
+        # get Conference throw an exception
+        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No Conference found with key: %s'
+                % request.websafeConferenceKey)
+
+        
+        session = Session.query(ancestor=conf.key)
+
+        return session
 
 # - - - Profile objects - - - - - - - - - - - - - - - - - - -
 

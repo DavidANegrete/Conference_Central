@@ -1,10 +1,10 @@
 SCRUM MASTER: gritzMCgritz
-
+Note to Self: http://localhost:8080/_ah/api/explorer to test
 
 
 Task 1: Add a Session to a Conference Object
 	
-	done
+	DONE
 	Session Class (models.py):
 		import:
 			from google.appengine.ext import ndb
@@ -13,7 +13,7 @@ Task 1: Add a Session to a Conference Object
 			class SessionForm(messages.Message):
 			class SessionForms(messages.Message):
 
-	done
+	DONE
 	SessionForm:
 		Child(parent Conference)
 
