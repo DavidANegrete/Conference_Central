@@ -88,6 +88,28 @@ CONF_POST_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey=messages.StringField(1),
 )
 
+SESSION_GET_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    websafeConferenceKey=messages.StringField(1, required=True),
+    typeOfSession=messages.StringField(2)
+)
+
+SESSION_POST_REQUEST = endpoints.ResourceContainer(
+    SessionForm,
+    websafeConferenceKey=messages.StringField(1, required=True),
+)
+
+SPEAKER_GET_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    speaker=messages.StringField(1, required=True),
+)
+
+WISHLIST_POST_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    websafeSessionKey=messages.StringField(1, required=True),
+)
+
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -351,7 +373,6 @@ class ConferenceApi(remote.Service):
                 setattr(sf, field.name, session_.key.urlsafe())
             elif field.name == "websafeConferenceKey":
                 setattr(sf, field.name, session_.key.parent().urlsafe())
-
         sf.check_initialized()
         return sf
 
@@ -369,6 +390,87 @@ class ConferenceApi(remote.Service):
         session = Session.query(ancestor=conf.key)
 
         return session
+
+
+    def _createSessionObject(self, request):
+        """Function used to create session objects. 
+           Returns a sessionForm object. 
+
+           Also starts a task queue and lets a user know
+           if the session speaker is speaking more than 
+           once in that Conference.
+        """
+
+        # ensure user is logged in:
+        user = endpoints.get_current_user()
+        if not user:
+            raise endpoints.UnauthorizedException("Authorization required")
+        user_id = getUserId(user)
+
+        # check if conf exists given websafeConfKey
+        # get conference; check that it exists
+        wsck = request.websafeConferenceKey
+        conf = ndb.Key(urlsafe=wsck).get()
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % wsck)
+
+        # Check if the person that created the conference 
+        # attempting to add the session
+        if user_id != conf.organizerUserId:
+            raise endpoints.UnauthorizedException(
+                "Creators can only add Sessions")
+
+        # ensure session's name was specified:
+        if not request.name:
+            raise endpoints.BadRequestException(
+                "Session 'name' field required")
+
+        # copy SessionForm/ProtoRPC Message into hash:
+        data = {field.name: getattr(request, field.name)
+                for field in request.all_fields()}
+        del data['websafeKey']
+        del data['websafeConferenceKey']
+
+        # add default values for those missing (both data model & outbound
+        # Message):
+        for df in DEFAULTS_SESSION:
+            if data[df] in (None, []):
+                data[df] = DEFAULTS_SESSION[df]
+                setattr(request, df, DEFAULTS_SESSION[df])
+
+        # convert date from string to Date object:
+        if data['date']:
+            data['date'] = datetime.strptime(
+                data['date'][:10], "%Y-%m-%d").date()
+        # convert startTime from string to Time object:
+        if data['startTime']:
+            data['startTime'] = datetime.strptime(
+                data['startTime'][:10], "%H:%M").time()
+        # convert duration from string to Time object:
+        if data['duration']:
+            data['duration'] = datetime.strptime(
+                data['duration'][:10], "%H:%M").time()
+
+        # make Conference key:
+        c_key = conf.key
+        # allocate new Session ID with Conference key as parent:
+        s_id = Session.allocate_ids(size=1, parent=c_key)[0]
+        # make Session key from ID:
+        s_key = ndb.Key(Session, s_id, parent=c_key)
+        data['key'] = s_key
+        # create Session:
+        Session(**data).put()
+
+        # check for featured speaker in conference:
+        taskqueue.add(params={'speaker': data['speaker'],
+                              'wsck': wsck
+                              },
+                      url='/tasks/set_featured_speaker')
+
+        # return (modified) SessionForm ('models.SessionForm'):
+        session_ = s_key.get()
+        return self._copySessionToForm(session_)
 
 # - - - Profile objects - - - - - - - - - - - - - - - - - - -
 
