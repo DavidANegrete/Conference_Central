@@ -29,13 +29,14 @@ Task 1: Add a Session to a Conference Object
 
 	API EndPoints methods:
 			get:
+				DONE
 				getConferenceSessions(websafeConferenceKey):
 					Take a session Key and return all session info 
-			
+				DONE
 				getConferenceSessionsByType(
 									websafeConferenceKey, typeOfSession):
 					Take a session Key and return a type
-				
+				DONE
 				getSessionsBySpeaker(speaker):
 					Given a speaker return all sessions by the speaker
 		

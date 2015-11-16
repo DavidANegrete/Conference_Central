@@ -99,7 +99,7 @@ SESSION_POST_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey=messages.StringField(1, required=True),
 )
 
-SPEAKER_GET_REQUEST = endpoints.ResourceContainer(
+GET_SPEAKER_REQUEST = endpoints.ResourceContainer(
     message_types.VoidMessage,
     speaker=messages.StringField(1, required=True),
 )
@@ -192,7 +192,7 @@ class ConferenceApi(remote.Service):
         )
         return request
 
-
+    # method to update datastore Object
     @ndb.transactional()
     def _updateConferenceObject(self, request):
         user = endpoints.get_current_user()
@@ -355,7 +355,106 @@ class ConferenceApi(remote.Service):
                 conferences]
         )
 
+
+# Sessions section sessions will create disctinct Conference form (TODO: 1)
+# Object with more disticition
+    # Creating a session object
+    @endpoints.method(SessionForm, SessionForm,
+            path='createSession',
+            http_method='POST', name='createSession')
+    def createSession(self, request):
+        """Create a session in a given conference; Ancestor of Conference Object"""
+        return self._createSessionObject(request)
+
+
+    @endpoints.method(CONF_GET_REQUEST, SessionForms,
+            path='conference/{websafeConferenceKey}/sessions',
+            http_method='GET', name='getConferenceSessions')
+    def getConferenceSessions(self, request):
+        """Get all sessions when a conference is passed"""
+        # from the passed in Confrence Object return a key
+        websafeKey = request.websafeConferenceKey
+        # Return the conference with the target key
+        conferenceObject = ndb.Key(urlsafe = websafeKey).get()
+        # Verify that the Conference exists
+        if not conferenceObject:
+            raise endpoints.NotFoundException(
+                'Conference not found with key: %s' % websafeKey)
+        # Ancestor query
+        sessions = Session.query()
+        # Session query Object
+        Sessions = sessions.Filter(Session.websafeConferenceKey == websafeKey)
+        return SessionForms(items=[self._copySessionToForm(session) for session in sessions])
+
+
+    @endpoints.method(SESSION_GET_REQUEST, SessionForms,
+            path='conference/{websafeConferenceKey}/sessions/{typeOfSession}',
+            http_method='GET', name='getConferenceSessionsByType') 
+    def getConferenceSessionsByType(self, request):
+        """Given a conference, return all sessions of a specified type (eg lecture, keynote, workshop)."""
+        # get the conference key
+        wsck = request.websafeConferenceKey
+        # get the type pf session we want
+        typeOfSession = request.typeOfSession
+        # fetch the conference with the target key
+        conf = ndb.Key(urlsafe = wsck).get()
+        # check whether the conference exists or not
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % wsck)
+        # create ancestor query for all key matches for this conference and type is what we want
+        sessions = Session.query()
+        sessions = sessions.filter(Session.typeOfSession == typeOfSession, Session.websafeConferenceKey == wsck)
+        # return set of SessionForm objects per Session
+        return SessionForms(items=[self._copySessionToForm(Session) for session in sessions])
+
+
+    @endpoints.method(GET_SPEAKER_REQUEST, SessionForms,
+            path='/sessions/{speaker}',
+            http_method='GET', name='getSessionsBySpeaker') 
+    def getSessionsBySpeaker(self, request):
+        """Takes an instance of a speaker as a string and 
+        returns all sessions given by that speaker."""
+        sessions = Session.query()
+        sessions = sessions.filter(Session.speaker == request.speaker)
+        # return set of SessionForm objects
+        return SessionForms(items=[self._copySessionToForm(session) for session in sessions])       
+
+
+
 # - - - SessionForm objects - - - - - - - - - - - - - - - - - - -
+    
+
+ 
+
+    @endpoints.method(CONF_GET_REQUEST, SessionForms,
+            http_method='GET', name='getConferenceSessionFeed')
+    def getConferenceSessionFeed(self, request):
+        """Returns a conference's sorted feed of sessions occurring same day and later."""
+
+        # copy ConferenceForm/ProtoRPC Message into dict
+        data = {field.name: getattr(request, field.name) for field in request.all_fields()}
+
+        # fetch existing conference
+        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+
+        # check that conference exists
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % request.websafeConferenceKey)
+
+        sessions = Session.query(ancestor=ndb.Key(Conference, conf.key.id()))\
+                          .filter(Session.date >= datetime.now()-timedelta(1))\
+                          .order(Session.date, Session.startTime)
+
+        # return set of SessionForm objects per Session
+        return SessionForms(
+            items=[self._copySessionToForm(session) for session in sessions]
+        )
+
+
+# -- Session Objects --
+
     def _copySessionToForm(self, session_):
         """Copy fields from Session to SessionForm"""
 
@@ -384,11 +483,8 @@ class ConferenceApi(remote.Service):
         if not conf:
             raise endpoints.NotFoundException(
                 'No Conference found with key: %s'
-                % request.websafeConferenceKey)
-
-        
+                % request.websafeConferenceKey)      
         session = Session.query(ancestor=conf.key)
-
         return session
 
 
