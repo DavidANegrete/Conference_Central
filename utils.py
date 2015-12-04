@@ -3,10 +3,14 @@ import os
 import time
 import uuid
 
+import endpoints
 from google.appengine.api import urlfetch
 from models import Profile
 
+# This method takes a user record and returns a unique ID if one exists. 
 def getUserId(user, id_type="email"):
+
+    # 
     if id_type == "email":
         return user.email()
 
@@ -43,3 +47,15 @@ def getUserId(user, id_type="email"):
             return profile.id()
         else:
             return str(uuid.uuid1().get_hex())
+
+
+# Gets the current authorized user by invoking endpoints.get_current_user()
+# If the incoming method has a valid auth or ID token, endpoints.get_current_user() 
+# returns a User, otherwise it returns None.
+def get_U_ID():
+
+    # get_current_user is an app engine method
+    user = endpoints.get_current_user()
+    if not user:
+        raise endpoints.UnauthorizedException('Authorization required')
+    return user

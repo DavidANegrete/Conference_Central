@@ -1,7 +1,7 @@
 SCRUM MASTER: gritzMCgritz
 Note to Self: http://localhost:8080/_ah/api/explorer to test
 
-
+DONE
 Task 1: Add a Session to a Conference Object
 	
 	DONE
@@ -27,6 +27,7 @@ Task 1: Add a Session to a Conference Object
 			start_time( 24HR )
 			like ( user_wish_list ) ( Bool )
 
+	DONE
 	API EndPoints methods:
 			get:
 				DONE
@@ -41,8 +42,9 @@ Task 1: Add a Session to a Conference Object
 					Given a speaker return all sessions by the speaker
 		
 			set:
+				DONE
 				createSession(SessionForm, websafeConferenceKey):
-					Take in a session form and conference key 
+					Take in a sessionForm and conference key 
 					returns a session object
 
 Task 2: User Wish List
