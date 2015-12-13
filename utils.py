@@ -7,10 +7,9 @@ import endpoints
 from google.appengine.api import urlfetch
 from models import Profile
 
-# This method takes a user record and returns a unique ID if one exists. 
+# Gets a users email or attempts to authenticate. 
 def getUserId(user, id_type="email"):
 
-    # 
     if id_type == "email":
         return user.email()
 
@@ -49,13 +48,52 @@ def getUserId(user, id_type="email"):
             return str(uuid.uuid1().get_hex())
 
 
-# Gets the current authorized user by invoking endpoints.get_current_user()
-# If the incoming method has a valid auth or ID token, endpoints.get_current_user() 
-# returns a User, otherwise it returns None.
-def get_U_ID():
-
-    # get_current_user is an app engine method
+# Gets the user by invoking get_current_user()(GAE) and a user object is 
+# returned if found, or an unauthorized exception is raised.
+def getUser():
     user = endpoints.get_current_user()
     if not user:
-        raise endpoints.UnauthorizedException('Authorization required')
+        raise endpoints.UnauthorizedException('Authorization required (ERROR 401)')
     return user
+
+
+# Checks if a field value is not filled out. 
+# An endpoints exception is raised it's left empty.
+def checkFieldValue(request):
+
+    if not request:
+        raise endpoints.BadRequestException(
+              "Field required field.(ERROR 400)"
+                )
+
+def checkField(request, name):
+    if not request:
+        raise endpoints.BadRequestException(
+              "'" + name + "' is a required field.(ERROR 400)"
+                )
+
+# Checks if a users ID and the ID of an ndb object are the not the same.  
+# When they are not a forbidden exception is raised.
+def checkUsers(userID, obj):
+    if userID != obj.organizerUserId:
+        raise endpoints.ForbiddenException(
+            user_id + " is not not permitted to proceed with the request \
+            (ERROR 403)")
+
+
+# Gets an ndb key or raises an exception  
+# Passed to this method is the request.name 
+def getParentKey(request):
+    try:
+        _key = ndb.Key(urlsafe=request)
+    except Exception:
+        raise endpoints.BadRequestException(
+            'Key error. (Error 400)')
+    return _key
+
+
+def checkObj(object, name):
+        if not object:
+            raise endpoints.NotFoundException(
+                'No ' + name + ' found with the key provided.'
+                 )

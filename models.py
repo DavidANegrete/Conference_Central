@@ -10,48 +10,59 @@ created/forked from conferences.py by wesc on 2014 may 24
 
 """
 
-__author__ = 'wesc+api@google.com (Wesley Chun)'
+__author__ = 'wesc+api@google.com (Wesley Chun)' 
 
 import httplib
 import endpoints
 from protorpc import messages
 from google.appengine.ext import ndb
 
+
 class ConflictException(endpoints.ServiceException):
     """ConflictException -- exception mapped to HTTP 409 response"""
     http_status = httplib.CONFLICT
 
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # - - - - - - - - - - -  Profile Object - - - - - - - - - - - - - - - - - - - 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# What:
-# The Profile NDB model has been modified.
 # 
-# How:
-# The wishList property was added to the NDB model. It's saved as a 
-# repeated string property in the DataStore.
+# Changed the following for a user objects profile using Conference Central API. 
+# 
+#Profile(ndb.Model):
+#   added:
+#       conferenceKeysToAttend      
+#           - Keeps conference keys if they will be attended.
+#       sessionWishList
+#           - Keeps wish list keys if they will be attended.
 #
-# Why: 
-# This was added to allow users the ability to add sessions they are 
-# interested in and retrieve their wishList. 
+# ProfileForm(message.Message):
+#   added:
+#       conferenceKeysToAttend + sessionWishList
+#           - Added to copy from the ndb object and display.
+#                  
 class Profile(ndb.Model):
     """Profile -- User profile object"""
-    displayName = ndb.StringProperty()
-    mainEmail = ndb.StringProperty()
-    teeShirtSize = ndb.StringProperty(default='NOT_SPECIFIED')
-    conferenceKeysToAttend = ndb.StringProperty(repeated=True)
+    displayName             = ndb.StringProperty()
+    mainEmail               = ndb.StringProperty()
+    teeShirtSize            = ndb.StringProperty(default='NOT_SPECIFIED')
+    conferenceKeysToAttend  = ndb.StringProperty(repeated=True)
+    sessionWishList         = ndb.StringProperty(repeated=True)
     
 
 class ProfileMiniForm(messages.Message):
     """ProfileMiniForm -- update Profile form message"""
-    displayName = messages.StringField(1)
-    teeShirtSize = messages.EnumField('TeeShirtSize', 2)
+    displayName             = messages.StringField(1)
+    TeeShirtSize            = messages.EnumField('TeeShirtSize', 2)
+
 
 class ProfileForm(messages.Message):
     """ProfileForm -- Profile outbound form message"""
-    displayName = messages.StringField(1)
-    mainEmail = messages.StringField(2)
-    teeShirtSize = messages.EnumField('TeeShirtSize', 3)
+    displayName             = messages.StringField(1)
+    mainEmail               = messages.StringField(2)
+    teeShirtSize            = messages.EnumField('TeeShirtSize', 3)
+    conferenceKeysToAttend  = messages.StringField(4, repeated=True)
+    sessionWishList         = messages.StringField(5, repeated=True)
     
 
 class TeeShirtSize(messages.Enum):
@@ -72,121 +83,140 @@ class TeeShirtSize(messages.Enum):
     XXXL_M = 14
     XXXL_W = 15
 
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # - - - - - - - - - - -  Conference Object  - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+#
 class Conference(ndb.Model):
     """Conference -- Conference object"""
-    name            = ndb.StringProperty(required=True)
-    description     = ndb.StringProperty()
-    organizerUserId = ndb.StringProperty()
-    topics          = ndb.StringProperty(repeated=True)
-    city            = ndb.StringProperty()
-    startDate       = ndb.DateProperty()
-    month           = ndb.IntegerProperty()
-    endDate         = ndb.DateProperty()
-    maxAttendees    = ndb.IntegerProperty()
-    seatsAvailable  = ndb.IntegerProperty()
+    name                    = ndb.StringProperty(required=True)
+    description             = ndb.StringProperty()
+    organizerUserId         = ndb.StringProperty()
+    topics                  = ndb.StringProperty(repeated=True)
+    city                    = ndb.StringProperty()
+    startDate               = ndb.DateProperty()
+    month                   = ndb.IntegerProperty()
+    endDate                 = ndb.DateProperty()
+    maxAttendees            = ndb.IntegerProperty()
+    seatsAvailable          = ndb.IntegerProperty()
+
 
 class ConferenceForm(messages.Message):
     """ConferenceForm -- Conference outbound form message"""
-    name            = messages.StringField(1)
-    description     = messages.StringField(2)
-    organizerUserId = messages.StringField(3)
-    topics          = messages.StringField(4, repeated=True)
-    city            = messages.StringField(5)
-    startDate       = messages.StringField(6) #DateTimeField()
-    month           = messages.IntegerField(7)
-    maxAttendees    = messages.IntegerField(8)
-    seatsAvailable  = messages.IntegerField(9)
-    endDate         = messages.StringField(10) #DateTimeField()
-    websafeKey      = messages.StringField(11)
-    organizerDisplayName = messages.StringField(12)
+    name                    = messages.StringField(1)
+    description             = messages.StringField(2)
+    organizerUserId         = messages.StringField(3)
+    topics                  = messages.StringField(4, repeated=True)
+    city                    = messages.StringField(5)
+    startDate               = messages.StringField(6) #DateTimeField()
+    month                   = messages.IntegerField(7)
+    maxAttendees            = messages.IntegerField(8)
+    seatsAvailable          = messages.IntegerField(9)
+    endDate                 = messages.StringField(10) #DateTimeField()
+    websafeKey              = messages.StringField(11)
+    organizerDisplayName    = messages.StringField(12)
+
 
 class ConferenceForms(messages.Message):
     """ConferenceForms -- multiple Conference outbound form message"""
     items = messages.MessageField(ConferenceForm, 1, repeated=True)
 
+
 # - - - - - - - - - - -  Query forms - - - - - - - - - - - - - - - - - - - - 
 class ConferenceQueryForm(messages.Message):
     """ConferenceQueryForm -- Conference query inbound form message"""
-    field = messages.StringField(1)
-    operator = messages.StringField(2)
-    value = messages.StringField(3)
+    field                   = messages.StringField(1)
+    operator                = messages.StringField(2)
+    value                   = messages.StringField(3)
+
 
 class ConferenceQueryForms(messages.Message):
     """ConferenceQueryForms -- multiple ConferenceQueryForm inbound form message"""
     filters = messages.MessageField(ConferenceQueryForm, 1, repeated=True)
 
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # - - - - - - - - - - -  Session Object - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  
-# Properties
-#   name(required field): 
-#       type:
-#           StringProperty
-#       purpose:
-#           Used to save a sessions name.
-#   highlights(optional field):
-#       type:
-#           StringProperty
-#       purpose:
-#           Saves the description of the things that make a session special.
-#   speaker(optional field):
-#       type:
-#           StringProperty 
-#       purpose:
-#           Saves the name of the speaker during a session.
-#   duration(optional field):
-#       type:
-#           IntegerProperty
-#       purpose:
-#           Save the amount of time in minutes a session will take.
-#   typeOfSession(default value 'GENERAL'):
-#       type:
-#           StringProperty
-#       purpose:
-#           Saves type of session (ex. workshop, tutorial). By default
-#           it's set to 'GENERAL' which represents the default option in
-#           the SessionType(enumeration) object.
-#   date(optional):
-#       type:
-#           DateProperty
-#       purpose:
-#           Stores the date a session will be on.
-#   startTime(required field):
-#       type:
-#           TimeProperty
-#       purpose:
-#           Will be used to represent the sessions start time in 24 hr notation.                 
+# 
+# The Session ndb.model stores a Session Object this object has a 'has-a'
+# relationship with the Conference object. This is an extension of the 
+# Conference  object. It has six string field properties, two are
+# required, one integerr .
+#   
+#   StringProperty:
+#       REQUIRED:
+#           (name) 
+#               - Used to save a sessions name.
+#
+#           (parentKey)
+#               - Represents the parent Conference key, creates the has-a relationship between
+#                 a session and its parent Conference.     
+#
+#       OPTIONAL:
+#          (highlights)
+#               - Saves the description of the things that make a session special.
+#
+#           (speaker) 
+#               - Saves the name of the speaker during a session.
+#
+#           (typeOfSession)
+#               default value: 'GENERAL'
+#               - Saves type of session (ex. workshop, tutorial). By default
+#                 it's set to 'GENERAL' which represents the default option in
+#                 the SessionType(enumeration) object.
+#
+#   IntegerProperty:
+#       OPTIONAL:
+#           (duration)
+#               - Save the amount of time in minutes a session will take.
+#
+#   DateProperty:
+#       OPTIONAL:
+#           (date)
+#           - Stores the date a session will be on.
+#   
+#   TimeProperty:
+#       OPTIONAL:
+#           (startTime)
+#           - Will be used to represent the sessions start time in 24 hr notation.                                 
+#
 class Session(ndb.Model):
     """Session -- Session object"""
-    name = ndb.StringProperty(required=True)
-    highlights = ndb.StringProperty()
-    speaker = ndb.StringProperty()
-    duration = ndb.IntegerProperty()
-    typeOfSession = ndb.StringProperty(default='GENERAL')
-    date = ndb.DateProperty()
-    startTime = ndb.TimeProperty()
+    name                    = ndb.StringProperty(required=True)
+    highlights              = ndb.StringProperty()
+    speaker                 = ndb.StringProperty()
+    duration                = ndb.IntegerProperty()
+    typeOfSession           = ndb.StringProperty(default='GENERAL')
+    date                    = ndb.DateProperty()
+    month                   = ndb.IntegerProperty()  
+    startTime               = ndb.TimeProperty()
+    parentKey               = ndb.StringProperty(required=True)
+
 
 class SessionForm(messages.Message):
     """SessionForm -- Session outbound form message"""
-    name            = messages.StringField(1)
-    highlights      = messages.StringField(2)
-    speaker         = messages.StringField(3)
-    duration        = messages.IntegerField(4)
-    typeOfSession   = messages.EnumField('SessionType',5)
-    date            = messages.StringField(6) #DateTimeField()
-    startTime       = messages.StringField(7) #DateTimeField()
+    name                    = messages.StringField(1)
+    highlights              = messages.StringField(2)
+    speaker                 = messages.StringField(3)
+    duration                = messages.IntegerField(4)
+    typeOfSession           = messages.EnumField('SessionType',5)
+    date                    = messages.StringField(6) #DateTimeField()
+    startTime               = messages.StringField(7) #DateTimeField()
+    parentKey               = messages.StringField(8) 
 
-class SessionType(messages.Enum):
-    """SessionType -- session type enumeration value"""
-    GENERAL = 1
-    WORKSHOP = 2
-    TUTORIAL = 3
-    SEMINAR = 4
-    FORUM = 5
 
 class SessionForms(messages.Message):
     """SessionForms -- multiple Session outbound form messages"""
     items = messages.MessageField(SessionForm, 1, repeated=True)
+
+# SessionType is a holder of the enum values available.
+#
+class SessionType(messages.Enum):
+    """SessionType -- session type enumeration value"""
+    GENERAL                 = 1
+    WORKSHOP                = 2
+    TUTORIAL                = 3
+    SEMINAR                 = 4
+    FORUM                   = 5
