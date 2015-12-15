@@ -81,7 +81,7 @@ def checkUsers(userID, obj):
             (ERROR 403)")
 
 
-# Gets an ndb key or raises an exception  
+# Gets a valid ndb key or raises an exception  
 # Passed to this method is the request.name 
 def getParentKey(request):
     try:
@@ -91,7 +91,8 @@ def getParentKey(request):
             'Key error. (Error 400)')
     return _key
 
-
+# Returns an error is the key provided is not good
+# Accepts two variables the request object and the name
 def checkObj(object, name):
         if not object:
             raise endpoints.NotFoundException(

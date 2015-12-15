@@ -135,6 +135,17 @@ class ConferenceQueryForms(messages.Message):
     """ConferenceQueryForms -- multiple ConferenceQueryForm inbound form message"""
     filters = messages.MessageField(ConferenceQueryForm, 1, repeated=True)
 
+# used when users register to a Conference
+class BooleanMessage(messages.Message):
+
+    """BooleanMessage-- outbound Boolean value message"""
+    data = messages.BooleanField(1)
+
+class StringMessage(messages.Message):
+    """StringMessage-- outbound (single) string message"""
+    data = messages.StringField(1, required=True)
+
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # - - - - - - - - - - -  Session Object - - - - - - - - - - - - - - - - - - -
@@ -143,50 +154,50 @@ class ConferenceQueryForms(messages.Message):
 # The Session ndb.model stores a Session Object this object has a 'has-a'
 # relationship with the Conference object. This is an extension of the 
 # Conference  object. It has six string field properties, two are
-# required, one integerr .
-#   
-#   StringProperty:
-#       REQUIRED:
-#           (name) 
-#               - Used to save a sessions name.
+# required, one integer.
+# 
+# StringProperty:
+#   REQUIRED:
+#       (name)
+#           - Used to save a sessions name.
 #
-#           (parentKey)
-#               - Represents the parent Conference key, creates the has-a relationship between
-#                 a session and its parent Conference.     
+#       (parentKey)
+#           - Represents the parent Conference key, creates the has-a relationship between
+#             a session and its parent Conference.     
 #
-#       OPTIONAL:
-#          (highlights)
-#               - Saves the description of the things that make a session special.
+#   OPTIONAL:
+#       (highlights)
+#           - Saves the description of the things that make a session special.
 #
-#           (speaker) 
-#               - Saves the name of the speaker during a session.
+#       (speakerID) 
+#           - Saves the speaker key.
 #
-#           (typeOfSession)
-#               default value: 'GENERAL'
-#               - Saves type of session (ex. workshop, tutorial). By default
-#                 it's set to 'GENERAL' which represents the default option in
-#                 the SessionType(enumeration) object.
+#       (typeOfSession)
+#           default value: 'GENERAL'
+#           - Saves type of session (ex. workshop, tutorial). By default
+#             it's set to 'GENERAL' which represents the default option in
+#             the SessionType(enumeration) object.
 #
-#   IntegerProperty:
-#       OPTIONAL:
-#           (duration)
-#               - Save the amount of time in minutes a session will take.
+# IntegerProperty:
+#   OPTIONAL:
+#       (duration)
+#           - Save the amount of time in minutes a session will take.
 #
-#   DateProperty:
-#       OPTIONAL:
-#           (date)
+# DateProperty:
+#   OPTIONAL:
+#       (date)
 #           - Stores the date a session will be on.
 #   
-#   TimeProperty:
-#       OPTIONAL:
-#           (startTime)
+# TimeProperty:
+#   OPTIONAL:
+#       (startTime)
 #           - Will be used to represent the sessions start time in 24 hr notation.                                 
 #
 class Session(ndb.Model):
     """Session -- Session object"""
     name                    = ndb.StringProperty(required=True)
     highlights              = ndb.StringProperty()
-    speaker                 = ndb.StringProperty()
+    speakerID               = ndb.StringProperty(repeated=True)
     duration                = ndb.IntegerProperty()
     typeOfSession           = ndb.StringProperty(default='GENERAL')
     date                    = ndb.DateProperty()
@@ -199,7 +210,7 @@ class SessionForm(messages.Message):
     """SessionForm -- Session outbound form message"""
     name                    = messages.StringField(1)
     highlights              = messages.StringField(2)
-    speaker                 = messages.StringField(3)
+    speakerID               = messages.StringField(3, repeated=True)
     duration                = messages.IntegerField(4)
     typeOfSession           = messages.EnumField('SessionType',5)
     date                    = messages.StringField(6) #DateTimeField()
@@ -211,8 +222,7 @@ class SessionForms(messages.Message):
     """SessionForms -- multiple Session outbound form messages"""
     items = messages.MessageField(SessionForm, 1, repeated=True)
 
-# SessionType is a holder of the enum values available.
-#
+# SessionType enum holder of the values available
 class SessionType(messages.Enum):
     """SessionType -- session type enumeration value"""
     GENERAL                 = 1
@@ -220,3 +230,42 @@ class SessionType(messages.Enum):
     TUTORIAL                = 3
     SEMINAR                 = 4
     FORUM                   = 5
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - -  Speaker Object - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# The Speaker ndb.model stores a Speaker Object it is a sole entity and can be 
+# related to one or many Session Objects. The Speaker ndb.model has 5 string 
+# field properties two are required.
+# 
+# StringProperty:
+#   REQUIRED:
+#       (name)
+#           - Represents the name of a speaker.
+#   OPTIONAL:
+#       (bio)
+#           - Is an overview of the speaker. 
+#       (company)
+#           - Holds one or many companies a speaker works or has worked for.
+#       (projects)
+#           - A list of projects that speaker has accomplished
+class Speaker(ndb.Model):
+    """Speaker -- Speaker object"""
+    name      = ndb.StringProperty(required=True)
+    bio       = ndb.StringProperty()
+    company   = ndb.StringProperty(repeated=True)
+    projects  = ndb.StringProperty(repeated=True)
+
+
+class SpeakerForm(messages.Message):
+    """SpeakerForm -- Speaker outbound form message"""
+    name       = messages.StringField(1)
+    bio        = messages.StringField(2)
+    company    = messages.StringField(3, repeated=True)
+    projects   = messages.StringField(4, repeated=True)
+
+
+class SpeakerForms(messages.Message):
+    """SpeakerForms -- Multiple Speaker outbound form message"""
+    items = messages.MessageField(SpeakerForm, 1, repeated=True)

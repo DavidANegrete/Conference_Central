@@ -3,13 +3,26 @@ application: fsdn41214
 version: 1
 
 runtime: python27
-api_version: 1 # This is the first version for now this stays the same.
-threadsafe: yes # to handle paraller requests
+api_version: 1
+threadsafe: yes 
 
+handlers:
 
+# Tasks
+- url: /tasks/send_confirmation_email
+  script: main.app
+  login: admin
 
-handlers:       
+- url: /tasks/set_featured_speaker
+  script: main.app
+  login: admin
 
+# Crons
+- url: /crons/set_announcement
+  script: main.app
+  login: admin
+
+# Static
 - url: /favicon\.ico
   static_files: favicon.ico
   upload: favicon\.ico
@@ -33,6 +46,12 @@ handlers:
   static_files: templates/index.html
   upload: templates/index\.html
   secure: always
+
+- url: /tasks/send_confirmation_email
+  script: main.app
+
+- url: /crons/set_announcement
+  script: main.app
 
 - url: /_ah/spi/.*
   script: conference.api
