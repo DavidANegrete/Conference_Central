@@ -29,6 +29,11 @@ indexes:
 
 - kind: Conference
   properties:
+  - name: maxAttendees
+  - name: name
+
+- kind: Conference
+  properties:
   - name: organizerUserId
   - name: name
 
